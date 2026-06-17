@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奇美醫院藥劑部 - 臨床能力委員會 (CCC) 決策輔助平台</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        chimei: { blue: '#005b9f', lightblue: '#007acc', orange: '#f39c12' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-gray-800">
+
+    <header class="bg-chimei-blue text-white shadow-md z-10 flex-shrink-0">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-hospital text-2xl"></i>
+                <h1 class="text-xl font-bold tracking-wider">奇美醫院藥劑部 <span class="font-normal text-sm ml-2 opacity-80">臨床能力委員會 (CCC) 決策輔助平台</span></h1>
+            </div>
+            <div class="flex items-center space-x-4 text-sm hidden md:flex">
+                <span><i class="fa-regular fa-calendar-alt mr-1"></i> 會議年月: 2026年6月</span>
+                <span class="bg-white text-chimei-blue px-3 py-1 rounded-full font-bold">教學負責人模式</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden flex flex-col md:flex-row">
+        
+        <div class="w-full md:w-1/3 lg:w-1/4 bg-white border-r shadow-sm flex flex-col h-full overflow-y-auto z-10">
+            <div class="p-5 border-b">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">目前檢視學員</label>
+                <select id="traineeSelect" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-chimei-blue focus:border-chimei-blue block p-2.5 mb-4 font-bold shadow-sm">
+                    <option value="B309H7">吳育銓 (B309H7)</option>
+                    <option value="B310G1">李思函 (B310G1)</option>
+                    <option value="B310H1">黃靖珺 (B310H1)</option>
+                    <option value="B311031">楊乃臻 (B311031)</option>
+                    <option value="B311115">王辰方 (B311115)</option>
+                    <option value="B31116">楊佳將 (B31116)</option>
+                    <option value="B31202">陳明昇 (B31202)</option>
+                </select>
+
+                <div class="flex items-start space-x-4 bg-blue-50 p-4 rounded-xl border border-blue-100 transition-all duration-300">
+                    <div class="bg-chimei-lightblue text-white rounded-full w-12 h-12 flex items-center justify-center flex-shrink-0 text-xl font-bold shadow-sm" id="t-avatar">吳</div>
+                    <div>
+                        <h2 class="text-lg font-bold text-chimei-blue" id="t-name">吳育銓</h2>
+                        <p class="text-sm text-gray-600">人事號: <span id="t-id" class="font-mono">B309H7</span></p>
+                        <p class="text-sm text-gray-600">到職年月: <span id="t-start">2024年9月</span></p>
+                        <div class="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            已訓時間: <span id="t-month" class="font-bold ml-1">21個月</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 flex-1">
+                <h3 class="text-sm font-bold text-gray-500 uppercase mb-3 border-b pb-1">能力發展指標 (EPAs) 總覽</h3>
+                <div class="space-y-6" id="epaListContainer"></div>
+            </div>
+        </div>
+
+        <div class="w-full md:w-2/3 lg:w-3/4 bg-gray-50 flex flex-col h-full relative" id="detailPanel">
+            
+            <div id="emptyState" class="flex-1 flex flex-col items-center justify-center text-gray-400">
+                <i class="fa-solid fa-clipboard-user text-6xl mb-4 opacity-50"></i>
+                <p class="text-lg font-medium">請由左側選擇一項 EPA 以檢視詳細評核資料</p>
+            </div>
+
+            <div id="contentState" class="hidden flex-col h-full">
+                <!-- Header -->
+                <div class="bg-white px-8 py-5 border-b shadow-sm flex justify-between items-end flex-shrink-0">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span id="detailEpaId" class="px-2 py-1 text-xs font-bold rounded bg-gray-200 text-gray-700">EPAX</span>
+                            <span id="detailEpaStatus" class="px-2 py-1 text-xs font-bold rounded">狀態</span>
+                        </div>
+                        <h2 id="detailEpaTitle" class="text-2xl font-bold text-gray-800">EPA 名稱</h2>
+                        <p class="text-sm text-gray-500 mt-1">應達標時間: 第 <span id="detailEpaTarget"></span> 個月</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500 mb-1">目前評定等級</p>
+                        <div id="detailCurrentLevel" class="text-2xl font-bold text-chimei-blue">Level X</div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Data Area -->
+                <div class="flex-1 overflow-y-auto p-4 lg:p-8 fade-in">
+                    
+                    <!-- Info Box -->
+                    <div class="mb-6 bg-blue-50 rounded-xl border border-blue-100 p-4">
+                        <div class="flex items-start">
+                            <i class="fa-solid fa-circle-info text-chimei-lightblue mt-0.5 mr-3"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-chimei-blue mb-1">EPA 任務描述與限制</h4>
+                                <p id="detailEpaDesc" class="text-sm text-gray-700 leading-relaxed whitespace-pre-line"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div id="chartContainer" class="hidden mb-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4 h-64">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-sm font-bold text-gray-700"><i class="fa-solid fa-chart-line text-chimei-blue mr-2"></i>信賴等級發展趨勢</h3>
+                        </div>
+                        <div class="h-48 relative">
+                            <canvas id="epaChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="space-y-6">
+                            <!-- Knowledge -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center">
+                                    <i class="fa-solid fa-brain text-purple-500 mr-2"></i>
+                                    <h3 class="font-bold text-gray-700">知識測驗 (Knowledge test)</h3>
+                                </div>
+                                <div class="p-0 overflow-x-auto">
+                                    <table class="min-w-full text-sm">
+                                        <tbody class="divide-y divide-gray-100" id="tableKnowledge"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Cases -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center">
+                                    <i class="fa-solid fa-file-medical text-teal-500 mr-2"></i>
+                                    <h3 class="font-bold text-gray-700">通報/學習紀錄案例數</h3>
+                                </div>
+                                <div class="p-4 flex items-center justify-between" id="containerCases"></div>
+                            </div>
+                        </div>
+
+                        <!-- Observations -->
+                        <div class="space-y-6">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center">
+                                    <i class="fa-solid fa-user-doctor text-chimei-blue mr-2"></i>
+                                    <h3 class="font-bold text-gray-700">職場直接觀察評估 (DOPS/Mini-CEX/Ad-hoc)</h3>
+                                </div>
+                                <div class="p-0">
+                                    <ul class="divide-y divide-gray-100" id="listObservations"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decision Area -->
+                <div id="decisionArea" class="bg-white border-t p-4 lg:px-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] flex-shrink-0 flex flex-col md:flex-row items-center justify-between transition-all duration-300">
+                    <div class="mb-3 md:mb-0 text-center md:text-left">
+                        <h4 class="font-bold text-gray-800"><i class="fa-solid fa-gavel text-chimei-orange mr-2"></i>CCC 委員會決策</h4>
+                        <p class="text-sm text-gray-500 hidden md:block">請依據上述佐證資料，決議該學員此項 EPA 之信賴等級。</p>
+                    </div>
+                    <div class="flex items-center space-x-3 w-full md:w-auto">
+                        <select id="newLevelSelect" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-chimei-blue focus:border-chimei-blue p-2.5">
+                            <option value="">-- 請選擇判定等級 --</option>
+                            <option value="Level 1">Level 1: 僅能觀察</option>
+                            <option value="Level 2">Level 2: 需在直接監督下執行</option>
+                            <option value="Level 3a">Level 3a: 教師事後逐項確認</option>
+                            <option value="Level 3b">Level 3b: 教師事後重點確認</option>
+                            <option value="Level 3c">Level 3c: 遇困難能主動求援</option>
+                            <option value="Level 4">Level 4: 可獨立執行</option>
+                            <option value="Level 5">Level 5: 可指導他人</option>
+                        </select>
+                        <button onclick="saveDecision()" class="bg-chimei-blue hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg shadow transition-colors flex items-center whitespace-nowrap">
+                            <i class="fa-solid fa-save mr-2"></i> 儲存
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="toast" class="absolute top-5 right-5 transform transition-all duration-300 translate-y-[-100px] opacity-0 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center z-50">
+                <i class="fa-solid fa-circle-check mr-2 text-xl"></i>
+                <span class="font-bold" id="toastMsg">操作成功！</span>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // 8個完整的 EPA 任務描述與限制
+        const epaDescriptions = {
+            "EPA1": "在門診藥局進行醫師處方評估，包括:\n(1) 蒐集處方評估所需資訊與判讀\n(2) 確認處方合理性，有疑義者形成用藥建議\n(3) 與處方醫師溝通討論用藥建議\n(4) 追蹤疑義處方處理結果並完成評估紀錄\n⚠️ 限制：排除特殊混和注射藥品處方",
+            "EPA2": "在門診發藥櫃檯，進行藥品交付作業，包括:\n(1) 接受處方並確認處方的完整性\n(2) 辨識病人身份\n(3) 確認藥品與處方一致\n(4) 指導用藥或轉介諮詢窗口",
+            "EPA3": "在門診藥局/藥物諮詢室，進行藥物諮詢與衛教作業，包括:\n(1) 確認諮詢者身份\n(2) 確認問題，評估諮詢者認知能力\n(3) 依問題類型收集與評估資訊\n(4) 回覆諮詢並完成紀錄",
+            "EPA4": "當接獲藥品不良反應通報時，須進行藥品不良反應評估，包括:\n(1) 收集病史、用藥史及排列事件時序\n(2) 評讀相關文獻並分析案例\n(3) 提供醫療團隊建議\n(4) 追蹤病人臨床表現並留下紀錄\n⚠️ 限制：排除疫苗不良反應",
+            "EPA5": "在住院藥局，進行住院病人用藥評估作業，包括:\n(1) 運用醫療資訊系統收集病人病史、用藥史及相關資訊\n(2) 審視用藥相關問題\n(3) 擬定建議計畫\n(4) 進行醫療團隊溝通\n(5) 追蹤並記錄",
+            "EPA6": "當接獲藥物治療監測(TDM)諮詢或檢驗結果完成時:\n(1) 收集與評估病人資訊\n(2) 評估藥品使用的適當性\n(3) 評估檢驗結果之合理性\n(4) 提供並記錄建議與追蹤結果",
+            "EPA7": "當接獲醫療人員藥品諮詢時，包括:\n(1) 確認並記錄諮詢者身份及回覆方式\n(2) 確認問題內容及原因\n(3) 收集與評估相關資訊\n(4) 回覆諮詢並記錄",
+            "EPA8": "藥師於門診、急診、住院藥局，當接獲管制藥品處方，從處方確認，調配並登錄，到每日盤點量與結存量不符時，須執行的任務:\n(1) 確認處方\n(2) 調配藥品\n(3) 登錄簿冊\n(4) 盤點與補充藥品\n(5) 異常事件處理\n⚠️ 限制：限第一級至第三級管制藥品，並排除替代療法藥品"
+        };
+
+        // 包含全部 7 位學員的詳細資料庫
+        const db = {
+            "B309H7": {
+                info: { name: "吳育銓", id: "B309H7", start: "2024年9月", month: 21 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗13次", score: "100分", pass: true }, { name: "疑義處方判讀", score: "81分", pass: true }, { name: "整合門診用藥評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/11/13", level: "Level 3", score: "7.9分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/11/18", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2024/12/18", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/01/18", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知(1)", score: "100分", pass: true }, { name: "門診作業須知(2)", score: "100分", pass: true }, { name: "門診作業須知(3)", score: "100分", pass: true }, { name: "門診作業須知(4)", score: "100分", pass: true }, { name: "急診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS 第1次", date: "2024/11/13", level: "Level 3c", score: "7.9分", pass: true }, { type: "DOPS 第2次", date: "2024/12/18", level: "Level 4", score: "8分", pass: true }, { type: "DOPS 第3次", date: "2025/01/18", level: "Level 4", score: "7.5分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/11/18", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2024/12/18", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/01/18", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [ { name: "藥品管理完訓測驗", score: "100分", pass: true } ], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS 第1次", date: "2025/05/14", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS 第2次", date: "2025/06/14", level: "Level 4", score: "7.8分", pass: true }, { type: "DOPS 第3次", date: "2025/07/14", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/05/21", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/06/21", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知(1)", score: "100分", pass: true }, { name: "住院作業須知(2)", score: "100分", pass: true }, { name: "疑義處方判讀", score: "81分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS 第1次", date: "2024/12/23", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS 第2次", date: "2025/01/20", level: "Level 3b", score: "7.4分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/30", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/30", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/23", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "已評", level: "Level 4", details: { knowledge: [{ name: "藥品諮詢知識(1)", score: "100分", pass: true }, { name: "藥品諮詢知識(2)", score: "100分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS 第1次", date: "2025/09/03", level: "Level 3b", score: "7.8分", pass: true }, { type: "DOPS 第2次", date: "2026/10/04", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/05", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/11/07", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "96分", pass: true }, { name: "藥品諮詢工作內容認知", score: "100分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2024/12/24", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2024/12/24", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_定量吸入劑", date: "2024/12/24", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2024/12/24", level: "Level 3c", score: "8分", pass: true }, { type: "Mini-CEX 第1次", date: "2024/12/26", level: "Level 4", score: "8.5分", pass: true }, { type: "Mini-CEX 第2次", date: "2024/12/27", level: "Level 4", score: "8.7分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/01/23", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2026/03/12", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/03/15", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "待評定", level: "Pending", details: { knowledge: [ { name: "ADR 認知測驗", score: "80分", pass: true } ], cases: { target: 2, actual: 2, pass: true }, observations: [{ type: "EPA Ad-hoc", date: "2026/03/05", level: "Level 3b", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "待評定", level: "Pending", details: { knowledge: [ { name: "TDM 認知測驗", score: "80分", pass: true } ], cases: { target: 2, actual: 2, pass: true }, observations: [{ type: "EPA Ad-hoc", date: "2025/09/30", level: "Level 3b", score: "-", pass: true }]}}
+                ]
+            },
+            "B310G1": {
+                info: { name: "李思函", id: "B310G1", start: "2024年10月", month: 20 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗13次", score: "100分", pass: true }, { name: "疑義處方判讀", score: "89分", pass: true }, { name: "整合門診用藥評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/11/04", level: "Level 4", score: "7.9分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/11/09", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2024/12/09", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/01/09", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知(1~4)", score: "100分", pass: true }, { name: "急診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS 第1次", date: "2024/12/20", level: "Level 3b", score: "8分", pass: true }, { type: "DOPS 第2次", date: "2025/01/25", level: "Level 4", score: "8分", pass: true }, { type: "DOPS 第3次", date: "2025/02/25", level: "Level 4", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/25", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/25", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/25", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [ { name: "藥品管理完訓測驗", score: "100分", pass: true } ], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS 第1次", date: "2025/03/04", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS 第2次", date: "2025/04/06", level: "Level 4", score: "7.6分", pass: true }, { type: "DOPS 第3次", date: "2025/05/08", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/03/13", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/04/13", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知", score: "100分", pass: true }, { name: "疑義處方判讀", score: "81分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS 第1次", date: "2025/05/20", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS 第2次", date: "2025/06/12", level: "Level 3c", score: "7.4分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/05/27", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/06/27", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/07/20", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥品諮詢知識", score: "100分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS 第1次", date: "2025/05/11", level: "Level 3b", score: "7.6分", pass: true }, { type: "DOPS 第2次", date: "2025/06/02", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/27", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/03/20", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "96分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2025/05/29", level: "Level 3c", score: "8分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2025/05/28", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_定量吸入劑", date: "2025/05/28", level: "Level 4", score: "8.3分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2025/05/29", level: "Level 3c", score: "8.5分", pass: true }, { type: "Mini-CEX 第1次", date: "2026/03/02", level: "Level 3c", score: "8.5分", pass: true }, { type: "Mini-CEX 第2次", date: "2026/03/03", level: "Level 4", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/05/29", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2026/03/15", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/04/27", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }}
+                ]
+            },
+            "B310H1": {
+                info: { name: "黃靖珺", id: "B310H1", start: "2024年10月", month: 20 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗13次", score: "100分", pass: true }, { name: "疑義處方判讀", score: "94分", pass: true }, { name: "整合門診用藥評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/11/07", level: "Level 4", score: "7.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/11/12", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2024/12/12", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/01/12", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知", score: "100分", pass: true }, { name: "急診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2024/12/24", level: "Level 3b", score: "7.6分", pass: true }, { type: "DOPS第2次", date: "2025/01/29", level: "Level 4", score: "8.5分", pass: true }, { type: "DOPS第3次", date: "2025/02/27", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc第1次", date: "2024/12/29", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/29", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/28", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [ { name: "藥品管理完訓測驗", score: "100分", pass: true } ], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2025/04/15", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/05/18", level: "Level 4", score: "7.8分", pass: true }, { type: "DOPS第3次", date: "2025/06/18", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/04/25", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/05/25", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知", score: "100分", pass: true }, { name: "疑義處方判讀", score: "91分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/12/30", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/04/27", level: "Level 3c", score: "7.4分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/01/06", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/02/06", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/27", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥品諮詢知識", score: "100分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS第1次", date: "2026/06/01", level: "Level 4", score: "8分", pass: true }, { type: "DOPS第2次", date: "2026/06/02", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc第1次", date: "2025/09/04", level: "Level 3a", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/12/17", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/05/09", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "96分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2025/05/22", level: "Level 3c", score: "8.4分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2025/05/22", level: "Level 4", score: "8.7分", pass: true }, { type: "DOPS_定量吸入劑", date: "2025/05/22", level: "Level 4", score: "8.8分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2025/05/23", level: "Level 3c", score: "8.6分", pass: true }, { type: "mini-CEX 第1次", date: "2025/06/24", level: "Level 3c", score: "8.5分", pass: true }, { type: "mini-CEX 第2次", date: "2025/06/25", level: "Level 4", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/06/26", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/07/23", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/08/24", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }}
+                ]
+            },
+            "B311031": {
+                info: { name: "楊乃臻", id: "B311031", start: "2024年11月", month: 19 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗", score: "100分", pass: true }, { name: "疑義處方判讀", score: "80分", pass: true }, { name: "整合門診評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/12/04", level: "Level 3b", score: "7.5分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/09", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/09", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/09", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2024/12/12", level: "Level 3b", score: "7.6分", pass: true }, { type: "DOPS第2次", date: "2025/01/17", level: "Level 4", score: "8.5分", pass: true }, { type: "DOPS 第3次", date: "2025/02/17", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/17", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/17", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/17", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [{ name: "藥品管理測驗", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2025/05/16", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/06/14", level: "Level 4", score: "7.8分", pass: true }, { type: "DOPS第3次", date: "2025/07/14", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/05/21", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/06/21", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知", score: "100分", pass: true }, { name: "疑義處方判讀", score: "81分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/05/28", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/05/30", level: "Level 3c", score: "7.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/06/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/07/04", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/07/28", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥品諮詢知識", score: "100分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/09/03", level: "Level 3a", score: "8分", pass: true }, { type: "DOPS第2次", date: "2026/10/04", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/05", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/11/07", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "96分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2025/01/14", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2025/01/13", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_定量吸入劑", date: "2025/01/13", level: "Level 4", score: "8.2分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2025/03/14", level: "Level 4", score: "8分", pass: true }, { type: "mini-CEX 第1次", date: "2026/01/08", level: "Level 4", score: "8分", pass: true }, { type: "mini-CEX 第2次", date: "2026/01/14", level: "Level 3c", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/10/28", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2026/03/15", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/03/16", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }}
+                ]
+            },
+            "B311115": {
+                info: { name: "王辰方", id: "B311115", start: "2024年11月", month: 19 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗", score: "100分", pass: true }, { name: "疑義處方判讀", score: "81分", pass: true }, { name: "整合門診評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/12/08", level: "Level 3b", score: "7.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/13", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/13", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/13", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知", score: "90分", pass: true }, { name: "急診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2024/12/26", level: "Level 4", score: "8.1分", pass: true }, { type: "DOPS第2次", date: "2025/01/31", level: "Level 3b", score: "8.1分", pass: true }, { type: "DOPS第3次", date: "2025/02/27", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc第1次", date: "2024/12/31", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/31", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/28", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [{ name: "藥品管理測驗", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2024/06/17", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS第2次", date: "2024/07/13", level: "Level 4", score: "7.7分", pass: true }, { type: "DOPS第3次", date: "2024/08/13", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc第1次", date: "2024/06/20", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2024/07/20", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知", score: "80分", pass: true }, { name: "疑義處方判讀", score: "81分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/06/05", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/08/02", level: "Level 3c", score: "7.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/06/12", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/07/12", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/08/15", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥品諮詢知識", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/05/11", level: "Level 3a", score: "7.8分", pass: true }, { type: "DOPS第2次", date: "2025/06/01", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/05", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/11/07", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "96分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2025/05/05", level: "Level 3c", score: "8分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2025/05/06", level: "Level 4", score: "8分", pass: true }, { type: "DOPS_定量吸入劑", date: "2025/05/05", level: "Level 4", score: "8.2分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2025/05/06", level: "Level 3c", score: "8分", pass: true }, { type: "mini-CEX 第1次", date: "2026/02/12", level: "Level 4", score: "8分", pass: true }, { type: "mini-CEX 第2次", date: "2026/03/02", level: "Level 3c", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/08/26", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2026/03/10", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/03/15", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }}
+                ]
+            },
+            "B31116": {
+                info: { name: "楊佳將", id: "B31116", start: "2024年11月", month: 19 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗", score: "100分", pass: true }, { name: "疑義處方判讀", score: "91分", pass: true }, { name: "整合門診評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/12/25", level: "Level 3b", score: "7.0分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/30", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/30", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/27", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知", score: "90分", pass: true }, { name: "急診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2025/01/15", level: "Level 3b", score: "7.8分", pass: true }, { type: "DOPS第2次", date: "2025/02/20", level: "Level 4", score: "8.3分", pass: true }, { type: "DOPS第3次", date: "2025/03/20", level: "Level 4", score: "8.1分", pass: true }, { type: "EPA Ad-hoc  第1次", date: "2025/01/20", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc  第2次", date: "2025/02/26", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc  第3次", date: "2025/03/25", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [{ name: "藥品管理測驗", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2025/08/18", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/09/19", level: "Level 4", score: "7.7分", pass: true }, { type: "DOPS第3次", date: "2025/10/19", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/29", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/26", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知", score: "100分", pass: true }, { name: "疑義處方判讀", score: "91分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/06/05", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/07/05", level: "Level 3c", score: "7.5分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/06/12", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/07/12", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/08/15", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥品諮詢知識", score: "100分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/05/11", level: "Level 3b", score: "7.6分", pass: true }, { type: "DOPS第2次", date: "2025/06/01", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/05", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/11/07", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "96分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2025/05/28", level: "Level 3c", score: "8分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2025/05/28", level: "Level 4", score: "8.5分", pass: true }, { type: "DOPS_定量吸入劑", date: "2025/05/28", level: "Level 4", score: "8.2分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2025/05/28", level: "Level 3c", score: "8分", pass: true }, { type: "mini-CEX 第1次", date: "2026/03/22", level: "Level 4", score: "8分", pass: true }, { type: "mini-CEX 第2次", date: "2026/03/23", level: "Level 3c", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/10/28", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2026/03/15", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/03/16", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }}
+                ]
+            },
+            "B31202": {
+                info: { name: "陳明昇", id: "B31202", start: "2024年12月", month: 18 },
+                epas: [
+                    { id: "EPA1", title: "門診處方評估", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "處方集測驗", score: "100分", pass: true }, { name: "疑義處方判讀", score: "100分", pass: true }, { name: "整合門診評估", score: "80分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS_處方調配", date: "2024/12/19", level: "Level 3b", score: "7.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2024/12/24", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/01/24", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/02/24", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA2", title: "門診處方藥品交付", year: 1, targetMonth: 6, status: "已評", level: "Level 4", details: { knowledge: [{ name: "門診作業須知", score: "100分", pass: true }, { name: "急診作業須知", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2025/01/13", level: "Level 3c", score: "7.7分", pass: true }, { type: "DOPS第2次", date: "2025/02/18", level: "Level 3b", score: "7.8分", pass: true }, { type: "DOPS第3次", date: "2025/03/18", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc第1次", date: "2025/01/20", level: "Level 3c", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/02/26", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/03/25", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA8", title: "管制藥品調劑與管理", year: 1, targetMonth: 9, status: "已評", level: "Level 4", details: { knowledge: [{ name: "藥品管理測驗", score: "100分", pass: true }], cases: { target: "-", actual: "N/A", pass: true }, observations: [{ type: "DOPS第1次", date: "2025/08/18", level: "Level 3c", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/09/19", level: "Level 4", score: "7.7分", pass: true }, { type: "DOPS第3次", date: "2025/10/19", level: "Level 4", score: "8.3分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/08/26", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/09/26", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA5", title: "住院病人用藥評估", year: 1, targetMonth: 12, status: "已評", level: "Level 4", details: { knowledge: [{ name: "住院作業須知", score: "100分", pass: true }, { name: "疑義處方判讀", score: "91分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/06/05", level: "Level 3b", score: "7分", pass: true }, { type: "DOPS第2次", date: "2025/07/05", level: "Level 3c", score: "7.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/06/12", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/07/12", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/08/05", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA7", title: "醫療人員藥品諮詢", year: 2, targetMonth: 15, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥品諮詢知識", score: "100分", pass: true }], cases: { target: 5, actual: 5, pass: true }, observations: [{ type: "DOPS第1次", date: "2025/05/11", level: "Level 3b", score: "7.7分", pass: true }, { type: "DOPS第2次", date: "2025/06/02", level: "Level 4", score: "8分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/09/04", level: "Level 3b", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/10/05", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2025/11/07", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA3", title: "門診病人藥品諮詢", year: 2, targetMonth: 18, status: "待評定", level: "Pending", details: { knowledge: [{ name: "藥物諮詢測驗", score: "100分", pass: true }, { name: "藥品資訊文獻評估", score: "95分", pass: true }], cases: { target: 10, actual: 10, pass: true }, observations: [{ type: "DOPS_胰島素", date: "2025/03/05", level: "Level 3c", score: "8分", pass: true }, { type: "DOPS_乾粉吸入劑", date: "2025/03/05", level: "Level 4", score: "8.4分", pass: true }, { type: "DOPS_定量吸入劑", date: "2025/03/06", level: "Level 4", score: "8.5分", pass: true }, { type: "DOPS_骨穩注射劑", date: "2025/03/06", level: "Level 3c", score: "8分", pass: true }, { type: "mini-CEX 第1次", date: "2025/03/08", level: "Level 4", score: "8.2分", pass: true }, { type: "mini-CEX 第2次", date: "2025/03/09", level: "Level 4", score: "8.6分", pass: true }, { type: "EPA Ad-hoc 第1次", date: "2025/03/20", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第2次", date: "2025/08/26", level: "Level 4", score: "-", pass: true }, { type: "EPA Ad-hoc 第3次", date: "2026/03/15", level: "Level 4", score: "-", pass: true }]}},
+                    { id: "EPA6", title: "藥物治療監測(TDM)評估與建議", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }},
+                    { id: "EPA4", title: "藥品不良反應評估", year: 2, targetMonth: 21, status: "未達評定時間", level: "-", details: { knowledge: [], cases: { target: "-", actual: "N/A", pass: false }, observations: [] }}
+                ]
+            }
+        };
+
+        let currentTrainee = "B309H7";
+        let currentEpaId = null;
+        let epaChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('traineeSelect').addEventListener('change', (e) => {
+                switchTrainee(e.target.value);
+            });
+            renderSidebar();
+        });
+
+        function switchTrainee(traineeId) {
+            currentTrainee = traineeId;
+            const data = db[currentTrainee].info;
+            
+            document.getElementById('t-avatar').innerText = data.name.charAt(0);
+            document.getElementById('t-name').innerText = data.name;
+            document.getElementById('t-id').innerText = data.id;
+            document.getElementById('t-start').innerText = data.start;
+            document.getElementById('t-month').innerText = data.month + "個月";
+
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('contentState').classList.add('hidden');
+            currentEpaId = null;
+
+            renderSidebar();
+        }
+
+        function renderSidebar() {
+            const data = db[currentTrainee];
+            const container = document.getElementById('epaListContainer');
+            container.innerHTML = '';
+
+            const year1 = data.epas.filter(e => e.year === 1);
+            const year2 = data.epas.filter(e => e.year === 2);
+
+            if(year1.length > 0) container.innerHTML += buildYearSection("第一年訓練 (Year 1)", year1);
+            if(year2.length > 0) container.innerHTML += buildYearSection("第二年訓練 (Year 2)", year2);
+        }
+
+        function buildYearSection(title, epas) {
+            let html = `<div class="mb-4"><h4 class="text-xs font-bold text-gray-400 mb-2">${title}</h4><div class="space-y-2">`;
+            
+            epas.forEach(epa => {
+                const isPending = epa.status === "待評定";
+                const isNotReady = epa.status === "未達評定時間";
+
+                let borderClass = "border-green-500 border-l-4";
+                let bgClass = "bg-white";
+                let textClass = "text-green-600";
+                let icon = "fa-circle-check";
+
+                if (isPending) {
+                    borderClass = "border-chimei-orange border-l-4";
+                    bgClass = "bg-orange-50";
+                    textClass = "text-chimei-orange";
+                    icon = "fa-circle-exclamation";
+                } else if (isNotReady) {
+                    borderClass = "border-gray-300 border-l-4";
+                    bgClass = "bg-gray-50 opacity-80";
+                    textClass = "text-gray-400";
+                    icon = "fa-clock";
+                }
+
+                html += `
+                    <div onclick="selectEpa('${epa.id}')" 
+                         class="cursor-pointer ${bgClass} ${borderClass} border-y border-r border-gray-200 rounded-r-lg p-3 hover:shadow-md transition-shadow flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-sm text-gray-800">${epa.id}</span>
+                                ${isPending ? '<span class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] rounded font-bold animate-pulse">需決議</span>' : ''}
+                            </div>
+                            <div class="text-sm font-medium text-gray-600 mt-0.5 line-clamp-1">${epa.title}</div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <i class="fa-solid ${icon} ${textClass}"></i>
+                            <span class="text-[10px] text-gray-400 mt-1">月 ${epa.targetMonth}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            return html;
+        }
+
+        function selectEpa(epaId) {
+            currentEpaId = epaId;
+            const data = db[currentTrainee].epas.find(e => e.id === epaId);
+            if(!data) return;
+
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('contentState').classList.remove('hidden');
+            
+            const scroller = document.querySelector('.fade-in');
+            scroller.classList.remove('fade-in');
+            void scroller.offsetWidth; 
+            scroller.classList.add('fade-in');
+
+            document.getElementById('detailEpaId').innerText = data.id;
+            document.getElementById('detailEpaTitle').innerText = data.title;
+            document.getElementById('detailEpaTarget').innerText = data.targetMonth;
+            
+            // 任務描述載入
+            let desc = epaDescriptions[data.id] || "暫無任務描述。";
+            // Highlight the warning if any
+            if(desc.includes('⚠️ 限制：')){
+                desc = desc.replace('⚠️ 限制：', '<span class="text-red-500 font-bold block mt-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 限制：</span><span class="text-red-600">') + '</span>';
+            }
+            document.getElementById('detailEpaDesc').innerHTML = desc;
+            
+            const statusBadge = document.getElementById('detailEpaStatus');
+            statusBadge.innerText = data.status;
+            
+            if(data.status === "已評") {
+                statusBadge.className = "px-2 py-1 text-xs font-bold rounded bg-green-100 text-green-700";
+                document.getElementById('detailCurrentLevel').innerText = data.level;
+                document.getElementById('detailCurrentLevel').className = "text-2xl font-bold text-green-600";
+                document.getElementById('decisionArea').classList.add('hidden');
+            } else if (data.status === "未達評定時間") {
+                statusBadge.className = "px-2 py-1 text-xs font-bold rounded bg-gray-200 text-gray-600";
+                document.getElementById('detailCurrentLevel').innerText = "未達時間";
+                document.getElementById('detailCurrentLevel').className = "text-2xl font-bold text-gray-400";
+                document.getElementById('decisionArea').classList.add('hidden');
+            } else {
+                statusBadge.className = "px-2 py-1 text-xs font-bold rounded bg-orange-100 text-orange-700";
+                document.getElementById('detailCurrentLevel').innerText = "尚未決議";
+                document.getElementById('detailCurrentLevel').className = "text-2xl font-bold text-orange-500";
+                document.getElementById('decisionArea').classList.remove('hidden');
+                // Reset select UI
+                document.getElementById('newLevelSelect').value = "";
+                document.getElementById('newLevelSelect').classList.remove('border-red-500', 'ring-red-500');
+            }
+
+            const kTable = document.getElementById('tableKnowledge');
+            kTable.innerHTML = '';
+            if (!data.details.knowledge || data.details.knowledge.length === 0) {
+                kTable.innerHTML = '<tr><td colspan="3" class="px-4 py-3 text-gray-400 italic text-center">尚無資料</td></tr>';
+            } else {
+                data.details.knowledge.forEach(k => {
+                    kTable.innerHTML += `
+                        <tr>
+                            <td class="px-4 py-3 text-gray-800">${k.name}</td>
+                            <td class="px-4 py-3 text-right font-mono">${k.score}</td>
+                            <td class="px-4 py-3 text-right">
+                                ${k.pass ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">達標</span>' : '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">未達標</span>'}
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const cContainer = document.getElementById('containerCases');
+            if (!data.details.cases || data.details.cases.actual === "N/A") {
+                cContainer.innerHTML = `<span class="text-gray-500 italic">此項目無通報案例要求或尚無資料</span>`;
+            } else {
+                const passClass = data.details.cases.pass ? "text-green-600" : "text-red-600";
+                cContainer.innerHTML = `
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">目標件數 / 實際完成</p>
+                        <div class="text-2xl font-bold">
+                            <span class="${passClass}">${data.details.cases.actual}</span> <span class="text-gray-400 text-lg">/ ${data.details.cases.target} 例</span>
+                        </div>
+                    </div>
+                    <div>
+                         ${data.details.cases.pass ? '<div class="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-sm font-bold"><i class="fa-solid fa-check mr-1"></i> 數量達標</div>' : ''}
+                    </div>
+                `;
+            }
+
+            const oList = document.getElementById('listObservations');
+            oList.innerHTML = '';
+            if (!data.details.observations || data.details.observations.length === 0) {
+                oList.innerHTML = '<li class="px-4 py-4 text-gray-400 italic text-center">尚無資料</li>';
+                document.getElementById('chartContainer').classList.add('hidden');
+            } else {
+                document.getElementById('chartContainer').classList.remove('hidden');
+                data.details.observations.forEach(o => {
+                    oList.innerHTML += `
+                        <li class="px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                            <div>
+                                <div class="font-bold text-gray-800 flex items-center">
+                                    ${o.type}
+                                    ${o.pass ? '<i class="fa-solid fa-circle-check text-green-500 ml-2 text-xs"></i>' : ''}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1"><i class="fa-regular fa-calendar mr-1"></i> ${o.date}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-chimei-blue">${o.level}</div>
+                                <div class="text-xs text-gray-400 font-mono mt-0.5">分數: ${o.score}</div>
+                            </div>
+                        </li>
+                    `;
+                });
+                renderChart(data.details.observations);
+            }
+        }
+
+        // 轉換 Level
+        function parseLevel(lvlStr) {
+            if (!lvlStr) return null;
+            const str = lvlStr.trim().toLowerCase();
+            if (str.includes('1')) return 1;
+            if (str.includes('2')) return 2;
+            if (str.includes('3a')) return 3.1;
+            if (str.includes('3b')) return 3.2;
+            if (str.includes('3c')) return 3.3;
+            if (str.includes('3')) return 3.0; 
+            if (str.includes('4')) return 4;
+            if (str.includes('5')) return 5;
+            return null;
+        }
+
+        function formatLevel(num) {
+            if (num === 1) return 'L1';
+            if (num === 2) return 'L2';
+            if (num === 3) return 'L3';
+            if (num === 3.1) return 'L3a';
+            if (num === 3.2) return 'L3b';
+            if (num === 3.3) return 'L3c';
+            if (num === 4) return 'L4';
+            if (num === 5) return 'L5';
+            return num;
+        }
+
+        function renderChart(observations) {
+            const ctx = document.getElementById('epaChart').getContext('2d');
+            
+            let chartData = observations
+                .filter(o => o.date && o.level && parseLevel(o.level) !== null)
+                .map(o => ({
+                    date: o.date,
+                    levelNum: parseLevel(o.level),
+                    rawLevel: o.level,
+                    type: o.type
+                }))
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (chartData.length === 0) {
+                document.getElementById('chartContainer').classList.add('hidden');
+                return;
+            }
+
+            if (epaChartInstance) {
+                epaChartInstance.destroy();
+            }
+
+            epaChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(d => d.date.substring(5)), // 顯示 MM/DD
+                    datasets: [{
+                        label: '信賴等級',
+                        data: chartData.map(d => d.levelNum),
+                        borderColor: '#005b9f',
+                        backgroundColor: 'rgba(0, 91, 159, 0.1)',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#f39c12',
+                        pointBorderColor: '#fff',
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 2.5,
+                            max: 4.5,
+                            afterBuildTicks: axis => axis.ticks = [2, 3, 3.1, 3.2, 3.3, 4, 5].map(v => ({ value: v })),
+                            ticks: {
+                                callback: function(value) { return formatLevel(value); },
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 10,
+                            callbacks: {
+                                title: function(context) { return chartData[context[0].dataIndex].date; },
+                                label: function(context) {
+                                    const raw = chartData[context.dataIndex];
+                                    return `${raw.type} : ${raw.rawLevel}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function saveDecision() {
+            const select = document.getElementById('newLevelSelect');
+            const newLvl = select.value;
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            
+            if(!newLvl) {
+                select.classList.add('border-red-500', 'ring-red-500');
+                
+                // 錯誤 Toast 提示
+                toast.classList.replace('bg-green-500', 'bg-red-500');
+                toast.innerHTML = '<i class="fa-solid fa-circle-exclamation mr-2 text-xl"></i><span class="font-bold">請選擇判定等級！</span>';
+                toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-y-[-100px]', 'opacity-0');
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    setTimeout(() => { toast.classList.replace('bg-red-500', 'bg-green-500'); }, 300); // 復原顏色
+                }, 3000);
+                return;
+            }
+
+            select.classList.remove('border-red-500', 'ring-red-500');
+
+            document.getElementById('detailCurrentLevel').innerText = newLvl;
+            document.getElementById('detailCurrentLevel').className = "text-2xl font-bold text-green-600";
+            document.getElementById('detailEpaStatus').innerText = "已評定 (當次)";
+            document.getElementById('detailEpaStatus').className = "px-2 py-1 text-xs font-bold rounded bg-chimei-blue text-white";
+            document.getElementById('decisionArea').classList.add('hidden');
+
+            // 成功 Toast 提示
+            toast.innerHTML = '<i class="fa-solid fa-circle-check mr-2 text-xl"></i><span class="font-bold">決策儲存成功！</span>';
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+
+            const data = db[currentTrainee].epas.find(e => e.id === currentEpaId);
+            if(data) {
+                data.status = "已評";
+                data.level = newLvl;
+                renderSidebar(); 
+            }
+        }
+    </script>
+</body>
+</html>
